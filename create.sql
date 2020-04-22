@@ -1,0 +1,7 @@
+CREATE TABLE `todo` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `item` mediumtext,
+  `completed` tinyint(1) DEFAULT NULL,
+  `deleted` tinyint(1) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
