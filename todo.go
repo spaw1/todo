@@ -4,20 +4,24 @@ import (
 	_ "encoding/json"
 )
 
-func Create(message string) int64 {
-	return CreateTodoEntity(message)
+func Create(message string) Todo {
+	var id = CreateTodoEntity(message)
+	return GetTodo(id)
 }
 func GetAll() []Todo {
 	return GetAllEntities()
 }
-
-func GetTodo(Id string) Todo {
+func Update(id int, todo Todo) Todo {
+	original := GetTodo(id)
+	if todo.Status == "" {
+		todo.Status = original.Status
+	}
+	if todo.Message == "" {
+		todo.Message = original.Message
+	}
+	UpdateEntity(id, todo)
+	return GetTodo(id)
+}
+func GetTodo(Id int) Todo {
 	return GetTodoEntity(Id)
-}
-func MarkAsComplete(Id string) bool {
-	return MarkAsCompleteEntity(Id)
-}
-
-func Delete(Id string) bool {
-	return DeleteEntity(Id)
 }

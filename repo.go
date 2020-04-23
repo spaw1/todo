@@ -9,10 +9,9 @@ import (
 )
 
 type Todo struct {
-	Id        int    `json:"id"`
-	Item      string `json:"item"`
-	Completed bool   `json:"complete"`
-	Deleted   bool   `json:"deleted"`
+	Id      int    `json:"id"`
+	Message string `json:"desc"`
+	Status  string `json:"status"`
 }
 
 type DbConfig struct {
@@ -45,27 +44,27 @@ func getConfig() DbConfig {
 	return dbConfig
 }
 
-func CreateTodoEntity(message string) int64 {
+func CreateTodoEntity(message string) int {
 	db := connect()
-	stmt, err := db.Exec("INSERT INTO TODO (item,completed,deleted) VALUES (?, 0, 0)", message)
+	stmt, err := db.Exec("INSERT INTO TODO (message) VALUES (?)", message)
 	if err != nil {
 		panic(err.Error())
 	}
 	id, err := stmt.LastInsertId()
 	defer db.Close()
-	return id
+	return int(id)
 }
 
 func GetAllEntities() []Todo {
 	db := connect()
-	stmt, err := db.Query("SELECT id,item,completed,deleted FROM TODO WHERE deleted = 0")
+	stmt, err := db.Query("SELECT id,message,status FROM TODO WHERE status <> 'deleted'")
 	if err != nil {
 		panic(err.Error())
 	}
 	var Todos []Todo
 	for stmt.Next() {
 		var todo Todo
-		err = stmt.Scan(&todo.Id, &todo.Item, &todo.Completed, &todo.Deleted)
+		err = stmt.Scan(&todo.Id, &todo.Message, &todo.Status)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -76,12 +75,11 @@ func GetAllEntities() []Todo {
 	return Todos
 }
 
-func GetTodoEntity(id string) Todo {
+func GetTodoEntity(id int) Todo {
 	db := connect()
-	idI, _ := strconv.Atoi(id)
-	row := db.QueryRow("SELECT id,item,completed,deleted FROM TODO WHERE id = ? AND deleted = 0", idI)
+	row := db.QueryRow("SELECT id,message,status FROM TODO WHERE id = ? AND status <> 'deleted'", int64(id))
 	var todo Todo
-	row.Scan(&todo.Id, &todo.Item, &todo.Completed, &todo.Deleted)
+	row.Scan(&todo.Id, &todo.Message, &todo.Status)
 	defer db.Close()
 	return todo
 }
@@ -89,7 +87,7 @@ func GetTodoEntity(id string) Todo {
 func MarkAsCompleteEntity(id string) bool {
 	db := connect()
 	idI, _ := strconv.Atoi(id)
-	stmt, _ := db.Exec("UPDATE TODO SET completed = 1 WHERE id = ? AND deleted = 0", idI)
+	stmt, _ := db.Exec("UPDATE TODO SET status = 'completed' WHERE id = ?", idI)
 	rows, _ := stmt.RowsAffected()
 	defer db.Close()
 	if rows > 0 {
@@ -101,11 +99,17 @@ func MarkAsCompleteEntity(id string) bool {
 func DeleteEntity(id string) bool {
 	db := connect()
 	idI, _ := strconv.Atoi(id)
-	stmt, _ := db.Exec("UPDATE TODO SET deleted = 1 WHERE id = ?", idI)
+	stmt, _ := db.Exec("UPDATE TODO SET status = 'deleted' WHERE id = ?", idI)
 	rows, _ := stmt.RowsAffected()
 	defer db.Close()
 	if rows > 0 {
 		return true
 	}
 	return false
+}
+
+func UpdateEntity(id int, todo Todo) {
+	db := connect()
+	db.Exec("UPDATE TODO SET message = ?, status = ? WHERE id = ?", todo.Message, todo.Status, id)
+	defer db.Close()
 }
